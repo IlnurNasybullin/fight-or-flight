@@ -1,0 +1,6 @@
+rootProject.name = 'fight-or-flight'
+include 'core'
+include 'cli'
+include 'unit'
+include 'strategy'
+
