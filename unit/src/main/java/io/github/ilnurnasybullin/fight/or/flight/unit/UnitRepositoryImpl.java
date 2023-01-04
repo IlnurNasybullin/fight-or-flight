@@ -3,7 +3,7 @@ package io.github.ilnurnasybullin.fight.or.flight.unit;
 import io.github.ilnurnasybullin.fight.or.flight.core.unit.ArmorType;
 import io.github.ilnurnasybullin.fight.or.flight.core.unit.AttackType;
 import io.github.ilnurnasybullin.fight.or.flight.core.unit.UnitType;
-import io.github.ilnurnasybullin.fight.or.flight.unit.csv.CsvReader;
+import io.github.ilnurnasybullin.fight.or.flight.csv.CsvReader;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;

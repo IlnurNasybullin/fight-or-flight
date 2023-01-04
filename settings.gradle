@@ -3,4 +3,6 @@ include 'core'
 include 'cli'
 include 'unit'
 include 'strategy'
+include 'game'
+include 'csv'
 

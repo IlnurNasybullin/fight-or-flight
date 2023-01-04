@@ -1,4 +1,4 @@
-package io.github.ilnurnasybullin.fight.or.flight.unit.csv;
+package io.github.ilnurnasybullin.fight.or.flight.csv;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
