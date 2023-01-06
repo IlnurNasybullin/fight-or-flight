@@ -2,4 +2,10 @@ dependencies {
     implementation project(':core')
     implementation project(':unit')
     implementation project(':strategy')
+    implementation project(':game')
+}
+
+application {
+    mainModule = 'io.github.ilnurnasybullin.fight.or.flight.cli'
+    mainClass = 'io.github.ilnurnasybullin.fight.or.flight.cli.Main'
 }

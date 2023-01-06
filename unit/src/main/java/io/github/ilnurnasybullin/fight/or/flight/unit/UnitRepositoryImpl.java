@@ -17,7 +17,7 @@ public class UnitRepositoryImpl implements UnitRepository {
 
     private static final UnitRepository SINGLETON = new UnitRepositoryImpl();
 
-    private static final String filename = "./units.csv";
+    private static final String filename = "units.csv";
 
     /**
      * Headers
@@ -45,7 +45,7 @@ public class UnitRepositoryImpl implements UnitRepository {
     private Map<UnitType, UnitRecord> readUnits(String filename) {
         try {
             return CsvReader.getInstance()
-                    .withInputStream(getClass().getResourceAsStream(filename))
+                    .withInputStream(UnitRepositoryImpl.class.getClassLoader().getResourceAsStream(filename))
                     .andCharset(StandardCharsets.UTF_8)
                     .andDelimiter(",")
                     .withHeaders()

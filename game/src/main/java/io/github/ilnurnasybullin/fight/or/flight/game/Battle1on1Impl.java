@@ -84,13 +84,11 @@ public class Battle1on1Impl implements Battle1on1, Battle1on1.State {
                 break;
             }
 
-            List<AttackResult> attackResult = applyStrategy(player, strategy);
-            attackResult.forEach(attackResultHandler);
+            applyStrategy(player, strategy);
         }
     }
 
-    private List<AttackResult> applyStrategy(Player player, MoveStrategy strategy) {
-        List<AttackResult> attacks = new ArrayList<>();
+    private void applyStrategy(Player player, MoveStrategy strategy) {
         for(Unit unit: player.party().units()) {
             Optional<Unit> target = strategy.unit(unit)
                     .hasTarget();
@@ -102,10 +100,14 @@ public class Battle1on1Impl implements Battle1on1, Battle1on1.State {
             ActiveUnit attacker = activeUnit(unit);
             ActiveUnit defender = activeUnit(target.get());
 
-            attacks.add(attacker.attack(defender, unitDamageTable));
+            AttackResult attackResult = attacker.attack(defender, unitDamageTable);
+            attackResultHandler.accept(attackResult);
         }
 
-        return attacks;
+        for (Unit unit: player.party().units()) {
+            ActiveUnit activeUnit = activeUnit(unit);
+            activeUnit.nextState();
+        }
     }
 
     private ActiveUnit activeUnit(Unit unit) {
@@ -145,7 +147,7 @@ public class Battle1on1Impl implements Battle1on1, Battle1on1.State {
         private RoundingIterator(T[] elements) {
             this.elements = elements;
             round = new AtomicInteger(0);
-            index = 0;
+            index = -1;
         }
 
         @Override
@@ -155,6 +157,8 @@ public class Battle1on1Impl implements Battle1on1, Battle1on1.State {
 
         @Override
         public RoundingValue<T> next() {
+            index++;
+
             if (index >= elements.length) {
                 index = 0;
                 round.incrementAndGet();

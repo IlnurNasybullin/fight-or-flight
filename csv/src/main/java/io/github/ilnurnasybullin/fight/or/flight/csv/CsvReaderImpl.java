@@ -40,13 +40,21 @@ public class CsvReaderImpl implements CsvReader, CsvReader.AndCharset, CsvReader
     }
 
     @Override
-    public Stream<Row> readCsv() throws Exception {
-        try(InputStream stream = inputStream;
-            InputStreamReader reader = new InputStreamReader(stream, charset);
-            BufferedReader bufferedReader = new BufferedReader(reader);
-            Stream<String> lines = bufferedReader.lines()) {
-            return lines.map(new RowReader(!withHeaders, delimiter))
-                    .flatMap(Optional::stream);
+    public Stream<Row> readCsv() {
+        InputStream stream = inputStream;
+        InputStreamReader reader = new InputStreamReader(stream, charset);
+        BufferedReader bufferedReader = new BufferedReader(reader);
+        return bufferedReader.lines().onClose(() -> closeStreams(inputStream, reader, bufferedReader)).map(new RowReader(!withHeaders, delimiter))
+                .flatMap(Optional::stream);
+    }
+
+    private void closeStreams(AutoCloseable... acs) {
+        for (AutoCloseable ac: acs) {
+            try {
+                ac.close();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

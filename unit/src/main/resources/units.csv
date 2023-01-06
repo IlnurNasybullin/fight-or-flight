@@ -7,7 +7,7 @@ sorceress,ground,325,0,unarmored,9,magic,1750,[ground;air],true,155,30000
 spell_breaker,ground,600,3,medium,12,normal,1900,ground,true,215,28000
 flying_machine,air,250,2,heavy,17,pierce,2000,air,true,100,13000
 mortar_team,ground,360,0,heavy,51,siege,3500,ground,true,180,32000
-siege_engine,ground,700,2,fortified,44,siege,2100,air,true,195,55000,
+siege_engine,ground,700,2,FORT,44,siege,2100,air,true,195,55000,
 gryphon_rider,air,875,0,light,44,magic,2200,[ground;air],true,280,45000
 dragonhawk_rider,air,625,1,light,17,pierce,1750,[ground;air],true,200,28000
 grunt,ground,700,1,heavy,17,normal,1600,ground,true,200,30000,

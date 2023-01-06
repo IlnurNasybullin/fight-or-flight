@@ -13,7 +13,7 @@ class OnLastValueMoveTypeIdentifier implements MoveTypeIdentifier {
             return MoveType.ATTACK;
         }
 
-        if (lastObjectiveFunction > objectiveFunction && objectiveFunction < 1) {
+        if (lastObjectiveFunction / objectiveFunction > 1 && objectiveFunction < 1) {
             return MoveType.RETREAT;
         }
 

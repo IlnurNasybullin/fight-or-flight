@@ -26,14 +26,14 @@ public class UnitDamageTableImpl implements UnitDamageTable {
     private final Map<AttackType, Map<ArmorType, Double>> attackCoeffs;
 
     private UnitDamageTableImpl() {
-        attackCoeffs = readCoeffs("./unit_damage_table.csv");
+        attackCoeffs = readCoeffs("unit_damage_table.csv");
     }
 
     private Map<AttackType, Map<ArmorType, Double>> readCoeffs(String filename) {
-        try(InputStream inputStream = getClass().getResourceAsStream(filename);
+        try(InputStream inputStream = UnitDamageTable.class.getClassLoader().getResourceAsStream(filename);
             Stream<CsvReader.Row> lines = CsvReader.getInstance().withInputStream(inputStream)
                     .andCharset(StandardCharsets.UTF_8)
-                    .andDelimiter("\s*|\s*")
+                    .andDelimiter("\s*\\|\s*")
                     .withHeaders()
                     .readCsv()) {
             return lines.map(new RowReader())

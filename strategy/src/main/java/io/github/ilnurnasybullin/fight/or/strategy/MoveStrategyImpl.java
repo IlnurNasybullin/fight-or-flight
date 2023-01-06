@@ -7,6 +7,7 @@ import io.github.ilnurnasybullin.fight.or.flight.core.unit.Unit;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class MoveStrategyImpl implements MoveStrategy {
 
@@ -21,7 +22,7 @@ public class MoveStrategyImpl implements MoveStrategy {
     }
 
     private MoveStrategyImpl(Map<Unit, Unit> unitTargetTable, MoveType type) {
-        this.unitTargetTable = unitTargetTable;
+        this.unitTargetTable = Map.copyOf(unitTargetTable);
         this.type = type;
     }
 
@@ -67,5 +68,13 @@ public class MoveStrategyImpl implements MoveStrategy {
     @Override
     public int hashCode() {
         return Objects.hash(type, unitTargetTable);
+    }
+
+    @Override
+    public String toString() {
+        return unitTargetTable.entrySet()
+                .stream()
+                .map(entry -> String.format("[%s -> %s]", entry.getKey(), entry.getValue()))
+                .collect(Collectors.joining(", "));
     }
 }

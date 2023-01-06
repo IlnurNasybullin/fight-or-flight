@@ -37,19 +37,19 @@ public interface Game {
         }
 
         interface AndRace {
-            HasPartyWithUnit andRace(Race race);
+            AndHasStrategy andRace(Race race);
         }
 
-        interface HasPartyWithUnit extends AndHasStrategy {
+        interface HasPartyWithUnit {
             AndUnit hasPartyWithUnit(UnitTemplate unitTemplate);
         }
 
-        interface AndUnit extends AndHasStrategy {
+        interface AndUnit extends And {
             AndUnit andUnit(UnitTemplate unitTemplate);
         }
 
         interface AndHasStrategy {
-            And andHasStrategy(StrategyFactory strategyFactory);
+            HasPartyWithUnit andHasStrategy(StrategyFactory strategyFactory);
         }
 
         interface And extends BuildGame {

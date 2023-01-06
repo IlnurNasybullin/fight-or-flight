@@ -13,11 +13,13 @@ public class StrategyFactoryImpl implements StrategyFactory {
     }
 
     private Strategy buildStrategyForAttacker(Player attacker, Player defender, UnitDamageTable unitDamageTable) {
-        return new GreedyAlgorithm(attacker, defender, unitDamageTable, new ObjectiveFunctionCalculatorImpl(), new OnLastValueMoveTypeIdentifier());
+        return new GreedyAlgorithm(attacker, defender, unitDamageTable, new ObjectiveFunctionCalculatorImpl(),
+                new OnLastValueMoveTypeIdentifier(), System.getLogger("GreedyAlgorithmLogger"));
     }
 
     private Strategy buildStrategyForDefender(Player attacker, Player defender, UnitDamageTable unitDamageTable) {
-        return new GreedyAlgorithm(defender, attacker, unitDamageTable, new ObjectiveFunctionCalculatorImpl(), new OnLastValueMoveTypeIdentifier());
+        return new GreedyAlgorithm(defender, attacker, unitDamageTable, new ObjectiveFunctionCalculatorImpl(),
+                new OnLastValueMoveTypeIdentifier(), System.getLogger("GreedyAlgorithmLogger"));
     }
 
     private static class Context implements AndDefender, WithUnitDamageTable, BuildStrategy {

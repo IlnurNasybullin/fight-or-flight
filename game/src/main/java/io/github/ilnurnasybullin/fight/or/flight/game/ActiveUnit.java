@@ -6,12 +6,13 @@ import io.github.ilnurnasybullin.fight.or.flight.core.unit.*;
 import io.github.ilnurnasybullin.fight.or.flight.unit.UnitRecord;
 
 import java.time.Duration;
+import java.util.Objects;
 
 public class ActiveUnit implements Unit {
 
     private final UnitRecord unitRecord;
     private final String name;
-    private final Player owner;
+    private Player owner;
     private final Attack attack;
     private final Armor armor;
     private final UnitMoveState unitMoveState;
@@ -25,6 +26,10 @@ public class ActiveUnit implements Unit {
         armor = new ArmorImpl(unitRecord.armorValue(), unitRecord.armorType());
         unitMoveState = new UnitMoveState(this, tactsForRecharging);
         hp = unitRecord.hp();
+    }
+
+    void changeOwner(Player owner) {
+        this.owner = owner;
     }
 
     @Override
@@ -44,7 +49,7 @@ public class ActiveUnit implements Unit {
 
     @Override
     public int ehp() {
-        return (int) armCoeff() / hp();
+        return (int) armCoeff() * hp();
     }
 
     private double armCoeff() {
@@ -102,7 +107,6 @@ public class ActiveUnit implements Unit {
                 .hasDamage();
 
         int receivedDamage = target.receivedDamage(damage);
-        unitMoveState.incMove();
         return new AttackResult(attacker, defender, receivedDamage, Battle1on1.AttackResult.Status.SUCCESS);
     }
 
@@ -112,6 +116,10 @@ public class ActiveUnit implements Unit {
         hp = (int) ((ehp - dmg) / armCoeff());
 
         return dmg;
+    }
+
+    void nextState() {
+        unitMoveState.incMove();
     }
 
     private record AttackImpl(int value, Duration cooldown) implements Attack { }
@@ -173,4 +181,17 @@ public class ActiveUnit implements Unit {
     }
 
     private record AttackResult(Unit attacker, Unit defender, int damage, Status status) implements Battle1on1.AttackResult {}
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ActiveUnit that = (ActiveUnit) o;
+        return Objects.equals(name, that.name) && Objects.equals(owner, that.owner);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, owner);
+    }
 }

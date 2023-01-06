@@ -22,15 +22,17 @@ class GreedyAlgorithm implements Strategy {
     private final Map<Unit, List<Unit>> opponentUnitsMostEfficientTargets;
     private final ObjectiveFunctionCalculator objectiveFunctionCalculator;
     private final MoveTypeIdentifier moveTypeIdentifier;
+    private final System.Logger logger;
 
     public GreedyAlgorithm(Player player, Player opponent, UnitDamageTable unitDamageTable,
                            ObjectiveFunctionCalculator objectiveFunctionCalculator,
-                           MoveTypeIdentifier moveTypeIdentifier) {
+                           MoveTypeIdentifier moveTypeIdentifier, System.Logger logger) {
         this.player = player;
         this.opponent = opponent;
         this.unitDamageTable = unitDamageTable;
         this.moveTypeIdentifier = moveTypeIdentifier;
         this.objectiveFunctionCalculator = objectiveFunctionCalculator;
+        this.logger = logger;
         playerUnitsMostEfficientTargets = createMostEfficientTargets(player, opponent, unitDamageTable);
         opponentUnitsMostEfficientTargets = createMostEfficientTargets(opponent, player, unitDamageTable);
     }
@@ -77,12 +79,18 @@ class GreedyAlgorithm implements Strategy {
         }
 
         List<MoveStrategy> someOnMoveStrategies = createSomeOnMoveStrategies(playerUnitsMostEfficientTargets, battleState);
+        if (someOnMoveStrategies.isEmpty()) {
+            return new MoveStrategyImpl(Map.of());
+        }
+
         MoveStrategyEstimation moveStrategyEstimation = someOnMoveStrategies.stream()
                 .map(strategy -> estimateForPlayer(player, strategy, battleState))
                 .max(Comparator.comparingDouble(MoveStrategyEstimation::estimation))
                 .orElseThrow();
 
-        MoveType moveType = moveTypeIdentifier.objectiveFunction(moveStrategyEstimation.estimation());
+        double estimation = moveStrategyEstimation.estimation();
+        logger.log(System.Logger.Level.INFO, "Оценка целевой функции игрока {0}: {1}", player.name(), estimation);
+        MoveType moveType = moveTypeIdentifier.objectiveFunction(estimation);
         if (moveType != MoveType.ATTACK) {
             return MoveStrategyImpl.RETREAT;
         }
@@ -92,8 +100,14 @@ class GreedyAlgorithm implements Strategy {
 
     private List<MoveStrategy> createSomeOnMoveStrategies(Map<Unit, List<Unit>> playerUnitsMostEfficientTargets,
                                                           Battle1on1.State battleState) {
-        MoveStrategy baseStrategy = new MostEfficientTargetsStrategyChoicer(unitDamageTable)
+        Optional<MoveStrategy> strategy = new MostEfficientTargetsStrategyChoicer(unitDamageTable)
                 .strategy(playerUnitsMostEfficientTargets, battleState);
+
+        if (strategy.isEmpty()) {
+            return List.of();
+        }
+
+        MoveStrategy baseStrategy = strategy.get();
 
         var strategies = playerUnitsMostEfficientTargets.keySet()
                 .stream()
@@ -104,6 +118,12 @@ class GreedyAlgorithm implements Strategy {
                 .collect(Collectors.toList());
         strategies.add(baseStrategy);
         return strategies;
+    }
+
+    private double objectionFunctionValue(Battle1on1.State state, Player player) {
+        return objectiveFunctionCalculator.player(player)
+                .withBattleState(state)
+                .hasValue();
     }
 
     private Optional<MoveStrategy> strategyWithShift(MoveStrategy strategy, Unit unit, Battle1on1.State battleState,
@@ -137,10 +157,8 @@ class GreedyAlgorithm implements Strategy {
             return Optional.empty();
         }
 
-        MoveStrategy newStrategy = new MostEfficientTargetsStrategyChoicer(unitDamageTable, Map.of(unit, newTarget))
+        return new MostEfficientTargetsStrategyChoicer(unitDamageTable, Map.of(unit, newTarget))
                 .strategy(playerUnitsMostEfficientTargets, battleState);
-
-        return Optional.of(newStrategy);
     }
 
     private boolean allUnitsAreDead(Player player, Battle1on1.State battleState) {
@@ -154,12 +172,21 @@ class GreedyAlgorithm implements Strategy {
     private MoveStrategyEstimation estimateForPlayer(Player player, MoveStrategy strategy, Battle1on1.State battleState) {
         Battle1on1.State newState = applyStrategy(battleState, strategy, player, unitDamageTable);
         List<MoveStrategy> opponentStrategies = createSomeOnMoveStrategies(opponentUnitsMostEfficientTargets, newState);
+        if (opponentStrategies.isEmpty()) {
+            return new MoveStrategyEstimation(strategy, objectionFunctionValue(newState, player));
+        }
+
         Player opponent = battleState.opponent(player);
 
-        return opponentStrategies.stream()
+        MoveStrategy opponentSrtg = opponentStrategies.stream()
                 .map(opponentStrategy -> estimateForOpponent(opponent, opponentStrategy, newState))
                 .max(Comparator.comparingDouble(MoveStrategyEstimation::estimation))
+                .map(MoveStrategyEstimation::strategy)
                 .orElseThrow();
+
+        Battle1on1.State newState1 = applyStrategy(newState, opponentSrtg, opponent, unitDamageTable);
+        double estimation = objectionFunctionValue(newState1, player);
+        return new MoveStrategyEstimation(strategy, estimation);
     }
 
     private Battle1on1.State applyStrategy(Battle1on1.State battleState, MoveStrategy strategy, Player player,
@@ -186,15 +213,12 @@ class GreedyAlgorithm implements Strategy {
                         .thatAttack(entry.getValue())
                         .hasDamage()
                 ))
-                .collect(Collectors.toMap(UnitWithDamage::targetUnit, UnitWithDamage::damage));
+                .collect(Collectors.toMap(UnitWithDamage::targetUnit, UnitWithDamage::damage, Integer::sum));
     }
 
     private MoveStrategyEstimation estimateForOpponent(Player opponent, MoveStrategy strategy, Battle1on1.State battleState) {
         Battle1on1.State newState = applyStrategy(battleState, strategy, opponent, unitDamageTable);
-        double estimation = objectiveFunctionCalculator.player(opponent)
-                .withBattleState(newState)
-                .hasValue();
-        return new MoveStrategyEstimation(strategy, estimation);
+        return new MoveStrategyEstimation(strategy, objectionFunctionValue(newState, opponent));
     }
 
     private record MoveStrategyEstimation(MoveStrategy strategy, double estimation) {}
@@ -215,7 +239,7 @@ class GreedyAlgorithm implements Strategy {
             this.unitDamageTable = unitDamageTable;
         }
 
-        public MoveStrategy strategy(Map<Unit, List<Unit>> playerUnitsMostEfficientTargets, Battle1on1.State battleState) {
+        public Optional<MoveStrategy> strategy(Map<Unit, List<Unit>> playerUnitsMostEfficientTargets, Battle1on1.State battleState) {
             Map<Unit, Integer> damages = new HashMap<>(this.damages);
             Map<Unit, Unit> targets = new HashMap<>(this.targets);
             var units = playerUnitsMostEfficientTargets.keySet()
@@ -227,10 +251,6 @@ class GreedyAlgorithm implements Strategy {
             Collections.shuffle(units, ThreadLocalRandom.current());
 
             for (var unit: units) {
-                if (battleState.unitState(unit) != UnitState.READY_TO_ATTACK) {
-                    continue;
-                }
-
                 var opponentUnits = playerUnitsMostEfficientTargets.get(unit);
                 if (opponentUnits == null) {
                     throw new IllegalStateException(String.format("For unit %s is not found opponent units as targets!", unit));
@@ -242,9 +262,8 @@ class GreedyAlgorithm implements Strategy {
                     }
 
                     targets.put(unit, opponentUnit);
+                    int damage = unitDamageTable.unit(unit).thatAttack(opponentUnit).hasDamage();
                     damages.compute(opponentUnit, (u, oldDamage) -> {
-                        int damage = unitDamageTable.unit(unit).thatAttack(u).hasDamage();
-
                         if (oldDamage == null) {
                             return damage;
                         } else {
@@ -255,7 +274,11 @@ class GreedyAlgorithm implements Strategy {
                 }
             }
 
-            return new MoveStrategyImpl(targets);
+            if (targets.isEmpty()) {
+                return Optional.empty();
+            }
+
+            return Optional.of(new MoveStrategyImpl(targets));
         }
 
         private boolean isAlreadyDead(Unit unit, Battle1on1.State battleState, Map<Unit, Integer> damages) {
@@ -264,11 +287,7 @@ class GreedyAlgorithm implements Strategy {
                 return true;
             }
 
-            if (damages.getOrDefault(unit, 0) >= unit.ehp()) {
-                return true;
-            }
-
-            return false;
+            return damages.getOrDefault(unit, 0) >= unit.ehp();
         }
     }
 }
