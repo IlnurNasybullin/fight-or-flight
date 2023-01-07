@@ -3,6 +3,8 @@ dependencies {
     implementation project(':unit')
     implementation project(':strategy')
     implementation project(':game')
+
+    implementation 'org.yaml:snakeyaml:1.33'
 }
 
 application {
